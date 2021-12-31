@@ -4,17 +4,6 @@
 source("libraries.R")
 walk(dir_ls("R"), source)
 
-# athlete_id <- Sys.getenv("ATHLETE_ID")
-
-## never used.
-# act_col_types <- list(
-#   moving = col_logical(), velocity_smooth = col_number(),
-#   grade_smooth = col_number(), distance = col_number(),
-#   altitude = col_number(), heartrate = col_integer(), time = col_integer(),
-#   lat = col_number(), lng = col_number(), cadence = col_integer(),
-#   watts = col_integer()
-# )
-
 my_app <- define_strava_app()
 
 my_endpoint <- define_strava_endpoint()
@@ -24,55 +13,13 @@ my_sig <- define_strava_sig(my_endpoint, my_app)
 
 df_act_raw <- read_all_activities(my_sig)
 
-## replace this with something slightly simpler?
-  ## does athlete_id do anything?
-  ## also this should be done over the separate lists OR I should also do this by type
-    ## but by list and using that as what we iterate over is easier
-df_act <- pre_process_act(df_act_raw, athlete_id)
-df_act_test <- pre_process_act(df_act_raw)
-
-## purrr'd up to get each type into separate fds within the list
-  ## there's some analysis that can happen up here now.
-# list_df_act <- df_act %>%
-#   split(., f = as.factor(.$type)) %>%
-#   purrr::map(., ~ (.x %>% select(-type)))
+df_act <- pre_process_act(df_act_raw)
 
 
-list_df_act %>%
+
+
+df_act %>%
   pluck("Run") %>%
-  filter(distance >= 5000 & moving_time > 0) %>%
-  select(distance, moving_time, total_elevation_gain, start_date_local) %>%
-  mutate(run_year = lubridate::year(start_date_local),
-         run_day = lubridate::wday(start_date_local),
-         run_hour = hour(lubridate::round_date(ymd_hms(start_date_local),unit="hour")),
-         run_ymd = lubridate::date(start_date_local),
-         distance_k = distance / 1000,
-         time_min = moving_time / 60,
-         min_per_km = time_min / distance_k,
-         run_class = factor(
-             case_when(
-              distance_k <= 10 ~ "5-10 km",
-              distance_k > 10 & distance_k <= 15 ~ "10-15 km",
-              distance_k > 15 & distance_k <= 18 ~ "15-18 km",
-              distance_k > 18 & distance_k <= 21 ~ "18-21 km",
-              distance_k > 21 & distance_k <= 24 ~ "21-24 km",
-              distance_k > 24 ~ "24+ km",
-            ),
-            levels = c("5-10 km","10-15 km","15-18 km","18-21 km","21-24 km","24+ km")
-          )
-         ) %>%
-  arrange(., start_date_local) %>%
-  group_by(run_year) %>%
-  mutate(run_order = order(start_date_local),
-         cumulative_distance = cumsum(distance_k),
-         cumulative_time = cumsum(time_min)) %>%
-  ungroup -> over_5k_runs_huh
-
-
-
-df_act_test %>%
-  pluck("Run") %>%
-  # filter(distance >= 5000 & moving_time > 0) %>%
   filter(moving_time > 0) %>%
   mutate(
     run_class =
@@ -94,77 +41,47 @@ df_act_test %>%
   mutate(run_order = order(start_date_local),
          cumulative_distance = cumsum(distance_k),
          cumulative_time = cumsum(time_min)) %>%
-  ungroup() -> over_5k_runs_test
+  ungroup() -> runs_with_moving_time
 
 
 
 
-over_5k_runs_test %>%
-  ggplot(., aes( x = run_order, y = min_per_km, color = run_class)) +
-  geom_path() +
-  geom_point() +
-  facet_grid(cols = vars(year),
-             rows = vars(run_class))
-
-
-over_5k_runs_test %>%
+runs_with_moving_time %>%
   ggplot(., aes(x = distance_k, y = time_min)) +
   geom_smooth(method = "lm", se=T, color="black", formula = y ~ x) +
   stat_poly_eq(formula = y ~ x,
                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
                parse = TRUE) +
-  geom_point(aes(color = run_class))
+  geom_point(aes(fill = run_class), alpha = .5, size = 3, shape = 21, color = "black", stroke = 1) +
+  theme_minimal() +
+  scale_color_carto_d(palette = "Vivid")
 
 
-over_5k_runs_test %>%
+runs_with_moving_time %>%
   ggplot(., aes(x = distance_k, y = time_min)) +
-  facet_grid(cols = vars(year)) +
+  facet_wrap(~year,nrow=2) +
   geom_smooth(method = "lm", se=T, color="black", formula = y ~ x) +
   stat_poly_eq(formula = y ~ x,
                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
                parse = TRUE) +
-  geom_point(aes(color = run_class))
+  geom_point(aes(fill = run_class), alpha = .5, size = 3, shape = 21, color = "black", stroke = 1) +
+  theme_minimal() +
+  scale_color_carto_d(palette = "Vivid")
 
 
-# cumulative distance
-
-over_5k_runs_test %>%
-  ggplot(., aes(x = run_order, y = cumulative_distance, color = as.character(year))) +
-  geom_line() +
-  geom_point()
-
-# cumulative time
-
-over_5k_runs_test %>%
-  ggplot(., aes(x = run_order, y = cumulative_time, color = as.character(year))) +
-  geom_line() +
-  geom_point()
-
-# paces by year
-
-# over_5k_runs %>%
-#   ggplot(., aes(x = min_per_km, color = as.character(run_year), fill = as.character(run_year))) +
-#   geom_density(alpha=0.6)#+
-#   #geom_histogram(aes(y=..density..), alpha = 0.5, position = "identity")
-
-over_5k_runs_test %>%
+runs_with_moving_time %>%
 ggplot(., aes(x = min_per_km, y = as.character(year), fill = stat(x))) +
   geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
+  theme_minimal() +
   scale_fill_viridis_c(name = "Pace [min/km]", option = "C", direction = -1) +
   labs(title = 'Paces by year')
 
 
-over_5k_runs_test %>%
-  ggplot(., aes(x = min_per_km, y = as.character(run_class), fill = stat(x))) +
-  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-  scale_fill_viridis_c(name = "Pace [min/km]", option = "C", direction = -1) +
-  labs(title = 'Paces by class')
-
-
 ## histogram by time of day overall then by year?
-over_5k_runs_test %>%
+  ## clean up a bit
+runs_with_moving_time %>%
   ggplot(., aes(x = hour)) +
-  geom_histogram(stat = "count", breaks=c(1:24))+
+  geom_histogram(stat = "count", breaks=c(1:24), color = "black", fill = "firebrick3")+
   coord_polar() +
   scale_x_continuous("", limits = c(0, 24),
                      breaks = seq(0, 24), labels = seq(0,24)) +
@@ -177,9 +94,10 @@ over_5k_runs_test %>%
         axis.ticks.y = element_blank())
 
 
-over_5k_runs_test %>%
+
+runs_with_moving_time %>%
   ggplot(., aes(x = hour)) +
-  geom_histogram(stat = "count", breaks=c(1:24))+
+  geom_histogram(stat = "count", breaks=c(1:24), color = "black", fill = "firebrick3")+
   coord_polar() +
   scale_x_continuous("", limits = c(0, 24),
                      breaks = seq(0, 24), labels = seq(0,24)) +
@@ -194,58 +112,42 @@ over_5k_runs_test %>%
 
 
 ## pie chart for run class
-over_5k_runs_test %>%
+runs_with_moving_time %>%
   group_by(run_class) %>%
   summarise(count = n()) %>%
-  # group_by(run_class) %>%
   mutate(percent = count / sum(count)) %>%
   ungroup %>%
   ggplot(., aes(x = "", y = percent, fill = run_class)) +
   geom_bar(width = 1, stat = "identity", color = "white") +
   coord_polar("y", start = 0)+
+  scale_fill_carto_d(palette = "Vivid") +
   theme_void()
 
 
-over_5k_runs_test %>%
+runs_with_moving_time %>%
   group_by(year, run_class) %>%
   summarise(count = n()) %>%
-  # group_by(run_class) %>%
   mutate(percent = count / sum(count)) %>%
   ungroup %>%
   ggplot(., aes(x = "", y = percent, fill = run_class)) +
   geom_bar(width = 1, stat = "identity", color = "white") +
   coord_polar("y", start = 0)+
+  scale_fill_carto_d(palette = "Vivid") +
   theme_void() +
   facet_wrap(~year, nrow = 2)
 
 
-# calendar heatmap
-  ## gotta fiddle with colors
-# over_5k_runs_test %>%
-#   select(run_ymd, distance_k, time_min) %>%
-#   mutate(year = year(run_ymd),
-#          month = month(run_ymd, label = TRUE),
-#          wkday = fct_relevel(wday(run_ymd, label=TRUE),
-#                              c("Sun","Sat","Fri","Thu","Wed","Tue","Mon")),
-#          day = day(run_ymd),
-#          wk = format(run_ymd, "%W")) -> for_calendar
-#
-# for_calendar %>%
 
-
-##### I AM NOT CAPTURING THE SUM HERE... look at WED in 2019...
-  ### also there are duplicates for week/day/year because I do multiple activities.
-  ## I need the SUM here
-over_5k_runs_test %>%
+runs_with_moving_time %>%
   group_by(year, month, wk, wkday) %>%
   summarize(distance_k_sum = sum(distance_k)) %>%
   ggplot(., aes(wk, wkday, fill=distance_k_sum)) +
-  geom_tile(color='black') +
-  geom_text(aes(label=round(distance_k_sum)), size=3) +
+  geom_tile(color='white') +
+  geom_text(aes(label=round(distance_k_sum)), size=2.5, color = "black") +
   labs(x='',
        y='',
        title="Distance by day") +
-  scale_fill_gradient(low="blue", high="red") +
+  scale_fill_carto_c(palette="SunsetDark") +
   theme(panel.background = element_blank(),
         axis.ticks = element_blank(),
         axis.text.x = element_blank(),
@@ -253,20 +155,38 @@ over_5k_runs_test %>%
   facet_grid(year~month, scales="free", space="free")
 
 
-over_5k_runs_test %>%
+runs_with_moving_time %>%
   group_by(year, month, wk, wkday) %>%
   summarize(time_sum = sum(time_min)) %>%
   ggplot(., aes(wk, wkday, fill=time_sum)) +
-  geom_tile(color='black') +
-  geom_text(aes(label=round(time_sum)), size=3) +
+  geom_tile(color='white') +
+  geom_text(aes(label=round(time_sum)), size=2, color = "black") +
   labs(x='',
        y='',
        title="Time by day") +
-  scale_fill_gradient(low="blue", high="red") +
+  scale_fill_carto_c(palette="SunsetDark") +
   theme(panel.background = element_blank(),
         axis.ticks = element_blank(),
         axis.text.x = element_blank(),
         strip.background = element_rect("grey92")) +
+  facet_grid(year~month, scales="free", space="free")
+
+
+runs_with_moving_time %>%
+  group_by(year, month, wk, wkday) %>%
+  summarize(pace_mean = mean(min_per_km)) %>%
+  ggplot(., aes(wk, wkday, fill=2^-pace_mean)) +
+  geom_tile(color='white') +
+  geom_text(aes(label=round(pace_mean,digits = 1)), size=2, color = "black") +
+  labs(x='',
+       y='',
+       title="Time by day") +
+  scale_fill_carto_c(palette="Tropic", direction = 1) +
+  theme(panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        strip.background = element_rect("grey92"),
+        legend.position = "none") +
   facet_grid(year~month, scales="free", space="free")
 
 

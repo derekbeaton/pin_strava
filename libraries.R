@@ -12,5 +12,7 @@ library(fs)
 library(here)
 library(ggpmisc)
 library(ggridges)
+library(rcartocolor)
+library(hrbrthemes)
 
 conflict_prefer("filter", "dplyr")
