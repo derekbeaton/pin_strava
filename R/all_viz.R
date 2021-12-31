@@ -9,8 +9,8 @@ distace_time_viz <- function(activity_df){
     geom_point(aes(fill = run_class), alpha = .5, size = 3, shape = 21, color = "black", stroke = 1) +
     theme_minimal() +
     scale_color_carto_d(palette = "Vivid") +
-    xlab("Distance (kilometers)") +
-    ylab("Time (minutes)")
+    xlab("Distance [kilometers]") +
+    ylab("Time [minutes]")
 
 
 }
@@ -27,9 +27,9 @@ distace_time_viz_year_facet <- function(activity_df){
                  parse = TRUE) +
     geom_point(aes(fill = run_class), alpha = .5, size = 3, shape = 21, color = "black", stroke = 1) +
     theme_minimal() +
-    scale_color_carto_d(palette = "Vivid")
-    xlab("Distance (kilometers)") +
-    ylab("Time (minutes)")
+    scale_color_carto_d(palette = "Vivid") +
+    xlab("Distance [kilometers]") +
+    ylab("Time [minutes]")
 
 
 }
@@ -105,7 +105,7 @@ proportion_run_class <- function(activity_df){
 proportion_run_class_facet_year <- function(activity_df){
 
   activity_df %>%
-    group_by(run_class) %>%
+    group_by(year, run_class) %>%
     summarise(count = n()) %>%
     mutate(percent = count / sum(count)) %>%
     ungroup %>%

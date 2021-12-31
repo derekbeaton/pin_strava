@@ -1,0 +1,12 @@
+---
+title: "Some Strava stuff"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Something
+
+something else

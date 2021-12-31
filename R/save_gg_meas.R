@@ -1,5 +1,6 @@
-save_gg_meas <- function(gg_meas) {
-  ggsave("gg_meas.png", gg_meas)
+save_gg <- function(gg_meas,output_name, width = 7, height = 7, dpi = 300) {
 
-  return("gg_meas.png")
+  ggsave(output_name, gg_meas, width = width, height = height, dpi = dpi)
+
+  return(output_name)
 }
