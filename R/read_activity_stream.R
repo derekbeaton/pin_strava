@@ -1,4 +1,5 @@
 read_activity_stream <- function(id, sig) {
+
   act_url <- parse_url(stringr::str_glue(
     "https://www.strava.com/api/v3/activities/{id}/streams"))
   access_token <- sig$credentials$access_token[[1]]

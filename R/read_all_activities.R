@@ -23,6 +23,5 @@ read_all_activities <- function(sig) {
   }
 
   act_vec %>%
-    bind_rows() %>%
-    mutate(start_date = ymd_hms(start_date))
+    bind_rows()
 }

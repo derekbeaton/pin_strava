@@ -2,20 +2,28 @@ source("libraries.R")
 
 walk(dir_ls("R"), source)
 
+# I should use this only for generate analyses and viz
+# the report should be manual because it requires interpretation of figures
+
 list(
-  tar_target(athlete_id, "26845822"),
-  tar_target(act_col_types, list(
-    moving = col_logical(), velocity_smooth = col_number(),
-    grade_smooth = col_number(), distance = col_number(),
-    altitude = col_number(), heartrate = col_integer(), time = col_integer(),
-    lat = col_number(), lng = col_number(), cadence = col_integer(),
-    watts = col_integer())),
+  tar_target(athlete_id, Sys.getenv("ATHLETE_ID")), # get your athlete id: we can make this a secret too (for privacy)
+
+  tar_target(act_col_types,
+    list(
+      moving = col_logical(), velocity_smooth = col_number(),
+      grade_smooth = col_number(), distance = col_number(),
+      altitude = col_number(), heartrate = col_integer(), time = col_integer(),
+      lat = col_number(), lng = col_number(), cadence = col_integer(),
+      watts = col_integer()
+    )
+  ),
 
   tar_target(my_app, define_strava_app()),
   tar_target(my_endpoint, define_strava_endpoint()),
   tar_target(
     my_sig, define_strava_sig(my_endpoint, my_app),
     cue = tar_cue(mode = "always")),
+
   tar_target(df_act_raw, read_all_activities(my_sig)),
   tar_target(df_act, pre_process_act(df_act_raw, athlete_id)),
   tar_target(act_ids, pull(distinct(df_act, id))),
