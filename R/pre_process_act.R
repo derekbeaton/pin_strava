@@ -3,7 +3,7 @@ pre_process_act <- function(df_act_raw){
 
 
   df_act_raw %>%
-    select(id, type, distance, moving_time, total_elevation_gain, start_date_local) %>%
+    select(id, name, type, workout_type, distance, moving_time, total_elevation_gain, start_date_local) %>%
     mutate(
            id = as.character(id),
            start_date_local = ymd_hms(start_date_local),
@@ -16,7 +16,8 @@ pre_process_act <- function(df_act_raw){
            hour = hour(lubridate::round_date(ymd_hms(start_date_local),unit="hour")),
            distance_k = distance / 1000,
            time_min = moving_time / 60,
-           min_per_km = time_min / distance_k) %>%
+           min_per_km = time_min / distance_k,
+           race_or_not = ifelse(workout_type==1,"race","not a race") ) %>%
     arrange(., start_date_local) %>%
     # group_by(year) %>%
     # mutate(run_order = order(start_date_local),

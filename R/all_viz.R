@@ -35,6 +35,25 @@ distace_time_viz_year_facet <- function(activity_df){
 }
 
 
+distace_time_viz_race_year_facet <- function(activity_df){
+
+  activity_df %>%
+    ggplot(., aes(x = distance_k, y = time_min)) +
+    facet_wrap(~year,nrow=2) +
+    geom_smooth(method = "lm", se=T, color="black", formula = y ~ x) +
+    stat_poly_eq(formula = y ~ x,
+                 aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                 parse = TRUE) +
+    geom_point(aes(fill = race_or_not), alpha = .5, size = 3, shape = 21, color = "black", stroke = 1) +
+    theme_minimal() +
+    scale_color_carto_d(palette = "Bold") +
+    xlab("Distance [kilometers]") +
+    ylab("Time [minutes]")
+
+
+}
+
+
 paces_by_year <- function(activity_df){
 
   activity_df %>%
@@ -168,7 +187,7 @@ calendar_heatmap_pace <- function(activity_df){
     geom_text(aes(label=round(pace_mean,digits = 1)), size=2, color = "black") +
     labs(x='',
          y='',
-         title="Time by day") +
+         title="Pace by day") +
     scale_fill_carto_c(palette="Tropic", direction = 1) +
     theme(panel.background = element_blank(),
           axis.ticks = element_blank(),

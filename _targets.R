@@ -93,6 +93,9 @@ list(
   tar_target(distace_time_viz_ggplot_facet, distace_time_viz_year_facet(runs_with_moving_time)),
   tar_target(distace_time_viz_png_facet, save_gg(distace_time_viz_ggplot_facet,"./figures/distace_time_viz_ggplot_facet.png"), format = "file"),
 
+  tar_target(distace_time_viz_race_ggplot_facet, distace_time_viz_race_year_facet(runs_with_moving_time)),
+  tar_target(distace_time_viz_race_png_facet, save_gg(distace_time_viz_race_ggplot_facet,"./figures/distace_time_viz_race_ggplot_facet.png"), format = "file"),
+
   tar_target(paces_by_year_viz_ggplot, paces_by_year(runs_with_moving_time)),
   tar_target(paces_by_year_viz_png, save_gg(paces_by_year_viz_ggplot,"./figures/paces_by_year_viz_ggplot.png"), format = "file"),
 
